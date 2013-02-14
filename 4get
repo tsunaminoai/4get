@@ -1,0 +1,118 @@
+#!/bin/bash
+TMP=`mktemp -t WK`
+TMP2=`mktemp -t WK2`
+LOC=""
+
+trap "{ echo 'Caught Ctrl-C. Cleaning up.';cleanup; exit 255;}" SIGINT
+
+cleanup()
+{
+	rm -f "$TMP" "$TMP2"
+}
+
+get_loc()
+{
+	LOC=`echo $1 | egrep -o '([0-9]*)$'`
+	if [ ! -d ./$LOC ]
+	then
+		mkdir $LOC
+	fi
+	
+	echo "Downloading to $LOC"
+}
+
+
+get_page()
+{
+	wget --no-check-certificate -q -O "$TMP" "$1"
+
+
+	if [ $? -ne 0 ]
+	then
+		echo "Page 404'd"
+		if [ -f "$LOC"/"$LOC".4url ]
+		then
+			echo "Removing from autoscrape"
+			rm -f "$LOC"/"$LOC".4url
+		fi
+		cleanup
+		return 255
+	else
+		sed -i -e 's/</\
+</g' "$TMP"
+
+		if [ ! -f "$LOC"/"$LOC".4url ]
+		then
+			echo "$1" > "$LOC"/"$LOC".4url
+		fi
+		return 0
+	fi
+
+}
+
+get_images()
+{
+	egrep -o "(//images.4chan.org/.*/src/[0-9]*.(gif|jpg|png))" "$TMP" | sed 's/^\(.*\)" target.*$/\1/g' | sort | uniq > "$TMP2"
+
+	COUNT=1
+	FOUND=`wc -l "$TMP2" | awk '{print $1}'`
+	echo "Found $FOUND images"
+
+	if [ $FOUND -gt 0 ]
+	then
+		if [ `ls "$LOC" | grep -v ".url" | wc -l` -ne $FOUND ]
+		then
+			cat "$TMP2" | while read i
+			do
+				FILE=`echo $i | egrep -o '([0-9]*.(gif|jpg|png))$'`
+				echo -e "Getting $COUNT of $FOUND\r\c"
+				wget --no-check-certificate  -q -nc -c "http:$i" -O "$LOC"/"$FILE"
+				COUNT=`expr $COUNT + 1`
+			done
+			echo -e "\n"
+		else
+			echo "All images downloaded."
+		fi
+	else
+		echo "No images found on page"
+	fi
+	
+	echo "Finished"
+}
+
+parse_folders()
+{
+	echo "Parsing folders for autoscrape"
+
+	for folder in `ls -l | grep -e "^d" | awk '{print $9}'`
+	do
+		if [ ! -f "$folder"/[0-9]*.4url ]
+		then
+			continue
+		fi
+		URL=`cat "$folder"/[0-9]*.4url`
+		get_loc $URL
+		get_page $URL
+		if [ $? -eq 0 ]
+		then	
+			get_images
+		fi		
+		echo ""
+	done 
+}
+
+if [ $# -eq 1 ]
+then
+	get_loc $1
+	get_page $1
+        if [ $? -eq 0 ]
+        then
+        	get_images
+        fi
+	cleanup
+elif [ $# -eq 0 ]
+then
+	parse_folders
+	cleanup
+fi
+
