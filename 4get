@@ -1,6 +1,6 @@
 #!/bin/bash
-TMP=`mktemp -t WK`
-TMP2=`mktemp -t WK2`
+TMP=`mktemp -t XXXXX`
+TMP2=`mktemp -t XXXXX`
 LOC=""
 
 trap "{ echo 'Caught Ctrl-C. Cleaning up.';cleanup; exit 255;}" SIGINT
@@ -17,7 +17,7 @@ get_loc()
 	then
 		mkdir $LOC
 	fi
-	
+
 	echo "Downloading to $LOC"
 }
 
@@ -52,7 +52,7 @@ get_page()
 
 get_images()
 {
-	egrep -o "(//images.4chan.org/.*/src/[0-9]*.(gif|jpg|png))" "$TMP" | sed 's/^\(.*\)" target.*$/\1/g' | sort | uniq > "$TMP2"
+	egrep -o "(//i.4cdn.org/.*/[0-9]*.(gif|jpg|png))" "$TMP" | sed 's/^\(.*\)" target.*$/\1/g' | sort | uniq > "$TMP2"
 
 	COUNT=1
 	FOUND=`wc -l "$TMP2" | awk '{print $1}'`
@@ -76,7 +76,7 @@ get_images()
 	else
 		echo "No images found on page"
 	fi
-	
+
 	echo "Finished"
 }
 
@@ -94,11 +94,11 @@ parse_folders()
 		get_loc $URL
 		get_page $URL
 		if [ $? -eq 0 ]
-		then	
+		then
 			get_images
-		fi		
+		fi
 		echo ""
-	done 
+	done
 }
 
 if [ $# -eq 1 ]

@@ -1,13 +1,13 @@
 4get
 ========
 
-An image downloader for wakaba-style imageboards.
+An image downloader for 4chan.
 
 ========
 
 Description:
 
-4get is a utility writing in bash script which will download all images in a given thread from any wakaba-style image board (2ch, 4chan, ponychan, etc).
+4get is a utility writing in bash script which will download all images in a given thread from 4chan specifically and potentially other waka-style imageboards
 
 4get will download all images to a folder with the thread's ID. Running 4get again will download any subsequent posts from that thread into the folder. When the thread expires or is removed, 4get will no longer update that thread.
 
